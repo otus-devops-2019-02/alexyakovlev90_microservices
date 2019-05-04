@@ -1,0 +1,28 @@
+sha256:35e806c8e26b1dbf27990913e7909880e0dc04a5f8c2e804d0dd6a3d5f4b265a
+
+Задание:
+Сравните вывод двух следующих команд
+>docker inspect <u_container_id>
+>docker inspect <u_image_id>
+На основе вывода команд объясните чем отличается контейнер от образа.
+
+Ответ:
+Подробно в статье https://www.ctl.io/developers/blog/post/what-to-inspect-when-youre-inspecting
+1) docker inspect <u_container_id>
+Содержит основную информацию:
+    - HostConfig
+        - Подробное описание https://godoc.org/github.com/docker/docker/api/types/container#HostConfig
+        - Описание конфигурации неймспейса, такие как маппинг портов, политика рестарта контейнера итд
+        - Используемая Cgroup неймспейса контейнера
+        - ограничения для Cgroup неймспейса контейнера
+        - Привилегии
+    - NetworkSettings - сетевое взаимодействие с контейнером
+    - State - состояние контейнера (PID, Запущен, итд)
+
+2) docker inspect <u_image_id>
+Содержит основную информацию:
+    - Parent - Ссылка на родительский Image
+    - Container - Ссылка на временный контейнер, в котором был создан имадж
+    - ContainerConfig - Конфигурация временного контейнера, в котором был создан имадж
+    - DockerVersion - версия докера, в которой создан имадж
+    - Virtual Size - размер имаджа в байтах
