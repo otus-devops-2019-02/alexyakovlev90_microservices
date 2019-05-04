@@ -1,5 +1,5 @@
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-ay/ubuntu-tmp       latest              35e806c8e26b        54 seconds ago      119MB
+ay/ubuntu-tmp-file  latest              35e806c8e26b        54 seconds ago      119MB
 
 Задание:
 Сравните вывод двух следующих команд
