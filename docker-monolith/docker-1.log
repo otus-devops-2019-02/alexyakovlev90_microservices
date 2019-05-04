@@ -1,4 +1,5 @@
-sha256:35e806c8e26b1dbf27990913e7909880e0dc04a5f8c2e804d0dd6a3d5f4b265a
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+ay/ubuntu-tmp       latest              35e806c8e26b        54 seconds ago      119MB
 
 Задание:
 Сравните вывод двух следующих команд
