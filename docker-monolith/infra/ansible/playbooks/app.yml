@@ -1,0 +1,9 @@
+---
+
+- name: Run app docker container
+  hosts: "all"
+  become: true
+
+  roles:
+    - role: "container-app"
+      tags: ["app"]

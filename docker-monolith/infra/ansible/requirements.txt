@@ -1,0 +1,4 @@
+ansible >= 2.4
+docker-py >= 1.7.0
+docker >= 1.20
+docker-compose >= 1.7.0

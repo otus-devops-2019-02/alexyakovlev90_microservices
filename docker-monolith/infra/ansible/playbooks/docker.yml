@@ -1,0 +1,9 @@
+---
+
+- name: Install docker
+  hosts: "all"
+  become: true
+
+  roles:
+    - role: "nickjj.docker"
+      tags: ["docker"]
