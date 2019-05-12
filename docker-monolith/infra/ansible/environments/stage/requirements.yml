@@ -1,0 +1,3 @@
+---
+- src: nickjj.docker
+  version: v1.8.0

@@ -1,0 +1,17 @@
+---
+# tasks file for container-app
+- name: Install dependent python modules
+  pip:
+    name: "{{item}}"
+    state: present
+  with_items:
+    - docker-py==1.10.6
+    - docker-compose==1.9.0
+
+- name: "Launch otus-reddit container"
+  docker_container:
+    name: "otus-reddit"
+    image: alexyakovlev90/otus-reddit:1.0
+    ports:
+      - "9292:9292"
+    restart: true
