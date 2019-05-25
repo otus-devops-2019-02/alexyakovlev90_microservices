@@ -19,3 +19,11 @@ service-account.json
 
 # Ansible docker module
 nickjj.docker/
+
+# Docker
+docker-compose.yml
+build_info.txt
+prometheus/
+
+## python specific
+*.pyc

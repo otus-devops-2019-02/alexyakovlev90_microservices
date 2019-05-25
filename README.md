@@ -11,7 +11,9 @@
 
 
 ### ДЗ docker-2
-#### 
+#### Docker контейнеры. Docker под капотом
+Запуск VM с установленным Docker Engine при помощи Docker Machine. 
+Написание Dockerfile и сборка образа с тестовым приложением. Сохранение образа на DockerHub.
 1) Создание Docker-хоста в GCP
 ```bash
 export GOOGLE_PROJECT=_project_name_ 
@@ -66,11 +68,55 @@ gcloud compute firewall-rules create reddit-app \
 3) Шаблон пакера, который делает образ с уже установленным Docker   
    
    
-   
+### ДЗ docker-3
+#### Docker-образы. Микросервисы  
+Линтер для написания докерфайлов
+- https://github.com/hadolint/hadolint
 
+1) Сборка образов с сервисами
+```bash
+    docker build -t alexyakovlev90/post:1.0 ./post-py
+    docker build -t alexyakovlev90/comment:1.0 ./comment
+    docker build -t alexyakovlev90/ui:1.0 ./ui
+```
+* для запуска без ошибок alexyakovlev90/post:1.0 билда 
+в начало python скрипта запуска был добавлен **shebang** 
+(https://stackoverflow.com/questions/55271912/flask-cli-throws-oserror-errno-8-exec-format-error-when-run-through-docker)
+* для имаджей `alexyakovlev90/ui:1.0` и `alexyakovlev90/comment:1.0 `
+для коректной сборки руби был явно указан репозиторий командой:
+```bash
+printf "deb http://archive.debian.org/debian/ jessie main\ndeb-src http://archive.debian.org/debian/ jessie main\ndeb http://security.debian.org jessie/updates main\ndeb-src http://security.debian.org jessie/updates main" > /etc/apt/sources.list
+```
 
+2) Создали bridge-сеть для контейнеров, так как сетевые алиасы не работают в сети по умолчанию
+```bash
+    docker network create reddit
+```
 
+3) Запуск контейнеров в созданной сети с алиасами
+    Сетевые алиасы могут быть использованы для сетевых соединений, как доменные имена
+```bash
+docker run -d --network=reddit \
+    --network-alias=post_db --network-alias=comment_db mongo:latest
+docker run -d --network=reddit \
+    --network-alias=post alexyakovlev90/post:1.0
+docker run -d --network=reddit \
+    --network-alias=comment alexyakovlev90/comment:1.0
+docker run -d --network=reddit \
+    -p 9292:9292 alexyakovlev90/ui:1.0
+```
+4) После изменения исходного образа Dockerfile сервиса UI
+с `ruby:2.2` на `ubuntu:16.04` размер имаджа снизился почти в 2 раза
+```bash
+docker build -t alexyakovlev90/ui:2.0 ./ui
+```
+5) Доп заданием образы, наследуемые от ruby:2.2 были
+собраны на основе Alpine Linux. Это существенно уменьшело 
 
-
-
-
+6) Для того, чтобы не терять данные из `mongo` после перезапуска контейнера
+был создан и примонтирован к БД volume
+```bash
+docker volume create reddit_db
+docker run -d --network=reddit --network-alias=post_db \
+    --network-alias=comment_db -v reddit_db:/data/db mongo:latest
+```
