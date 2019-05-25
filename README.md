@@ -111,10 +111,9 @@ docker run -d --network=reddit \
 docker build -t alexyakovlev90/ui:2.0 ./ui
 ```
 5) Доп заданием образы, наследуемые от ruby:2.2 были
-собраны на основе Alpine Linux. Это существенно уменьшело 
+собраны на основе Alpine Linux. Это существенно уменьшело их размер
 
-6) Для того, чтобы не терять данные из `mongo` после перезапуска контейнера
-был создан и примонтирован к БД volume
+6) Монтирование volume к БД
 ```bash
 docker volume create reddit_db
 docker run -d --network=reddit --network-alias=post_db \
