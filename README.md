@@ -119,3 +119,70 @@ docker volume create reddit_db
 docker run -d --network=reddit --network-alias=post_db \
     --network-alias=comment_db -v reddit_db:/data/db mongo:latest
 ```
+
+
+### ДЗ docker-4
+#### Docker: сети, docker-compose
+1) Запустим контейнер с использованием none-драйвера.
+   В качестве образа используем joffotron/docker-net-tools,
+   его состав уже входят необходимые утилиты для работы с сетью: пакеты bindtools, net-tools и curl. 
+```bash
+docker run -ti --rm --network none joffotron/docker-net-tools -c ifconfig
+```
+Контейнер запустится, выполнить команду `ifconfig` и будет удален (флаг --rm)
+Можно запускать сетевые сервисы внутри такого контейнера, но лишь для локальных
+экспериментов (тестирование, контейнеры для выполнения разовых задач и т.д.)
+
+2) Запустим контейнер в сетевом пространстве docker-хоста
+```bash
+docker run -ti --rm --network host joffotron/docker-net-tools -c ifconfig
+```
+вывод команды практически идентичен `docker-machine ssh docker-host ifconfig`
+
+3) Повторите запуски контейнеров с использованием драйверов
+none и host и посмотрите, как меняется список namespace.
+Для просмотра net-namespaces с помощью команды `sudo ip netns`
+На docker-host машине выполните команду: 
+```bash
+ sudo ln -s /var/run/docker/netns /var/run/netns
+```
+- При запуске контейнера с использованием none-драйвера 
+для каждого нового контейнера создается дополнительный namespace
+
+- При запуске контейнера с использованием host-драйвера сети
+контейнер будет использовать default namespace
+
+4) Создадим bridge-сеть в docker (флаг --driver указывать не обязательно, по-умолчанию используется bridge)
+```bash
+ docker network create reddit --driver bridge
+```
+Запуск приложений в сети с использованием алиасов,
+чтобы обращаться по dns-именам, прописанным в ENV-переменных
+```bash
+docker run -d --network=reddit --network-alias=post_db --network-alias=comment_db mongo:latest
+docker run -d --network=reddit --network-alias=post alexyakovlev90/post:1.0
+docker run -d --network=reddit --network-alias=comment alexyakovlev90/comment:1.0
+docker run -d --network=reddit -p 9292:9292 alexyakovlev90/ui:1.0
+```
+
+5) Запуск проекта в 2х bridge сетях
+```bash
+> docker network create back_net --subnet=10.0.2.0/24
+> docker network create front_net --subnet=10.0.1.0/24
+```
+Docker при инициализации контейнера может подключить к нему только 1 сеть
+Подключим контейнеры ко второй сети
+```bash
+> docker network connect front_net post
+> docker network connect front_net comment 
+```
+
+6) Собрать и запустить образы приложения reddit с помощью docker-compose 
+с множеством сетей и параметризированных переменных окружений
+```bash
+> docker-compose up -d
+> docker-compose ps
+```
+Имя проекта задано с помощью переменной окружения
+COMPOSE_PROJECT_NAME=dockermicroservices
+и указано в .env файле (https://docs.docker.com/compose/environment-variables/)
