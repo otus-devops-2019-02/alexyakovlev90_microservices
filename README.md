@@ -186,3 +186,42 @@ Docker при инициализации контейнера может под�
 Имя проекта задано с помощью переменной окружения
 COMPOSE_PROJECT_NAME=dockermicroservices
 и указано в .env файле (https://docs.docker.com/compose/environment-variables/)
+
+
+### ДЗ gitlab-ci-1
+#### Устройство Gitlab CI. Построение процесса непрерывной поставки
+
+1) Создать в Google Cloud новую мощную виртуальную машину
+```bash
+docker-machine create --driver google \
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-1 \
+    --google-zone europe-west1-b \
+    --google-tags allow-http,allow-https \
+    --google-disk-size 100 \
+    gitlab-host
+
+eval $(docker-machine env gitlab-host)
+```
+* рекомендуемые характеристики сервера https://docs.gitlab.com/ce/install/requirements.html
+* Аргументы создания ВМ в docker-machine https://docs.docker.com/machine/drivers/gce/
+
+
+```bash
+git checkout -b gitlab-ci-1
+
+git remote add gitlab http://35.205.70.101/homework/example.git
+git push gitlab gitlab-ci-1
+```
+
+
+```bash
+docker run -d --name gitlab-runner --restart always \
+    -v /srv/gitlab-runner/config:/etc/gitlab-runner \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    gitlab/gitlab-runner:latest
+```
+
+```bash
+docker exec -it gitlab-runner gitlab-runner register --run-untagged --locked=false
+```
