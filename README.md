@@ -226,7 +226,7 @@ docker run -d --name gitlab-runner --restart always \
 ```bash
 docker exec -it gitlab-runner gitlab-runner register --run-untagged --locked=false
 ```
-```bash
+```
 Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
 > http://<YOUR-VM-IP>/
 Please enter the gitlab-ci token for this runner:
@@ -245,3 +245,44 @@ Runner registered successfully.
 5) Добавили стадию тестирования/ревью в pipeline, окружения 
 6) В шаг build добавили сборку контейнера с приложением reddit 
 7) Добавили Деплой контейнера с reddit на созданный для ветки сервер.
+
+
+### ДЗ monitoring-1
+#### Введение в мониторинг. Системы мониторинга.
+
+1) Создали правило фаервола для Prometheus и Puma:
+```bash
+gcloud compute firewall-rules create prometheus-default --allow tcp:9090
+gcloud compute firewall-rules create puma-default --allow tcp:9292 
+```
+2) Создание Docker-хоста в GCP
+```bash
+docker-machine create --driver google \
+   --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+   --google-machine-type n1-standard-1 \
+   --google-zone europe-west1-b \
+   docker-host 
+
+eval $(docker-machine env docker-host)
+```   
+
+3) Установили Систему мониторинга Prometheus
+```bash
+docker run --rm -p 9090:9090 -d --name prometheus prom/prometheus:v2.1.0
+```
+
+4) Добавили мониторинг ВМ в docker-compose.yml
+- https://github.com/prometheus/node_exporter
+
+5) Запушили сервисы в Docker Hub 
+- https://cloud.docker.com/repository/docker/alexyakovlev90
+```bash
+docker push alexyakovlev90/ui
+docker push alexyakovlev90/comment
+docker push alexyakovlev90/post
+docker push alexyakovlev90/prometheus 
+```
+
+
+
+

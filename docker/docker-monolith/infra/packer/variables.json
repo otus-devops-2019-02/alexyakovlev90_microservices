@@ -1,0 +1,5 @@
+{
+  "gcp_project_id": "docker-239619",
+  "gcp_image_family": "ubuntu-1604-lts",
+  "gcp_machine_type": "f1-micro"
+}
