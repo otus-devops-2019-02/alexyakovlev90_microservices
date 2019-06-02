@@ -18,6 +18,7 @@ build_job:
   stage: build
   script:
     - echo 'Building'
+    - puma
 
 test_unit_job:
   stage: test
@@ -36,6 +37,9 @@ deploy_dev_job:
   stage: review
   script:
     - echo 'Deploy'
+    - export SERVER_IP=35.205.70.101        # public IP address of the target host
+    - export REPO_NAME=express42/reddit     # repo name to fetch the code from, e.g. Artemmkin/reddit
+    - export DEPLOY_USER=deploy_user        # username used to connect via SSH
   environment:
     name: dev
     url: http://dev.example.com
