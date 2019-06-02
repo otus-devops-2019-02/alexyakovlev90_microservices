@@ -186,3 +186,62 @@ Docker при инициализации контейнера может под�
 Имя проекта задано с помощью переменной окружения
 COMPOSE_PROJECT_NAME=dockermicroservices
 и указано в .env файле (https://docs.docker.com/compose/environment-variables/)
+
+
+### ДЗ gitlab-ci-1
+#### Устройство Gitlab CI. Построение процесса непрерывной поставки
+
+1) Создали в Google Cloud новую мощную виртуальную машину
+```bash
+docker-machine create --driver google \
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-1 \
+    --google-zone europe-west1-b \
+    --google-tags allow-http,allow-https \
+    --google-disk-size 100 \
+    gitlab-host
+
+eval $(docker-machine env gitlab-host)
+```
+* рекомендуемые характеристики сервера https://docs.gitlab.com/ce/install/requirements.html
+* Аргументы создания ВМ в docker-machine https://docs.docker.com/machine/drivers/gce/
+
+2) Разворачиваем GitLab (описание в docker-compose.yml)
+
+3) Создаем группу/проект в гитлабе и CI/CD Pipeline в .gitlab-ci.yml
+```bash
+git checkout -b gitlab-ci-1
+
+git remote add gitlab http://35.205.70.101/homework/example.git
+git push gitlab gitlab-ci-1
+```
+4) Создаем и добавляем Runner для запуска pipeline
+```bash
+docker run -d --name gitlab-runner --restart always \
+    -v /srv/gitlab-runner/config:/etc/gitlab-runner \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    gitlab/gitlab-runner:latest
+```
+- регистрируем Runner в Gitlab
+```bash
+docker exec -it gitlab-runner gitlab-runner register --run-untagged --locked=false
+```
+```bash
+Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
+> http://<YOUR-VM-IP>/
+Please enter the gitlab-ci token for this runner:
+> <TOKEN>
+Please enter the gitlab-ci description for this runner:
+> my-runner
+Please enter the gitlab-ci tags for this runner (comma separated):
+> linux,xenial,ubuntu,docker
+Please enter the executor:
+> docker
+Please enter the default Docker image (e.g. ruby:2.1):
+> alpine:latest
+Runner registered successfully.
+```
+
+5) Добавили стадию тестирования/ревью в pipeline, окружения 
+6) В шаг build добавили сборку контейнера с приложением reddit 
+7) Добавили Деплой контейнера с reddit на созданный для ветки сервер.
