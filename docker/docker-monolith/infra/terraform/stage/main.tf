@@ -13,7 +13,7 @@ provider "google" {
 }
 
 module "docker" {
-  source           = "../modules/docker"
+  source           = "..\/modules\/docker"
   public_key_path  = "${var.public_key_path}"
   private_key_path = "${var.private_key_path}"
   instances_count = "${var.instances_count}"
