@@ -284,5 +284,26 @@ docker push alexyakovlev90/prometheus
 ```
 
 
+### ДЗ monitoring-1
+#### Мониторинг приложения и инфраструктуры
+
+`docker-compose up -d` - запуск приложения
+`docker-compose -f docker-compose-monitoring.yml up -d` - запуск мониторинга
+
+1) Мониторинг Docker контейнеров
+- https://github.com/google/cadvisor
+
+2) Визуализация метрик
+- https://grafana.com/dashboards
+
+3) Сбор метрик работы приложения и бизнес метрик
+- поиск всех http запросов, у которых код возврата начинается либо с 4 либо с 5
+```
+rate(ui_request_count{http_status=~"^[45].*"}[1m])
+```
+
+4) Настройка и проверка алертинга
+- prom/alertmanager:v0.14.0
+
 
 
