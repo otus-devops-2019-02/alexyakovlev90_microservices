@@ -284,7 +284,7 @@ docker push alexyakovlev90/prometheus
 ```
 
 
-### ДЗ monitoring-1
+### ДЗ monitoring-2
 #### Мониторинг приложения и инфраструктуры
 
 `docker-compose up -d` - запуск приложения
@@ -304,6 +304,41 @@ rate(ui_request_count{http_status=~"^[45].*"}[1m])
 
 4) Настройка и проверка алертинга
 - prom/alertmanager:v0.14.0
+
+
+### ДЗ logging-1
+#### Логирование и распределенная трассировка
+
+1) Сбор неструктурированных логов
+- GCE docker machine 
+```bash
+docker-machine create --driver google \
+    --google-machine-image https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts \
+    --google-machine-type n1-standard-1 \
+    --google-open-port 5601/tcp \
+    --google-open-port 9292/tcp \
+    --google-open-port 9411/tcp \
+    logging
+```
+35.224.139.91
+
+- Логирование Docker контейнеров  
+    - Для отправки логов во Fluentd используем docker драйвер
+    https://docs.docker.com/config/containers/logging/fluentd/
+
+2) Визуализация логов
+- Для визуализации используется Kibana
+- Необходимо задать индекс `fluentd-*`
+
+3) Сбор структурированных логов
+- Для парсинга логов использовались:
+    - регулярные выражения
+    - grok-шаблоны - именованные шаблоны регулярных выражений
+
+4) Распределенная трасировка
+
+
+
 
 
 
