@@ -338,7 +338,8 @@ docker-machine create --driver google \
 4) Распределенная трасировка
 
 
+### ДЗ kubernetes-1
+#### Введение в Kubernetes
 
-
-
+- Ручная установка кластера k8s: https://github.com/kelseyhightower/kubernetes-the-hard-way
 
