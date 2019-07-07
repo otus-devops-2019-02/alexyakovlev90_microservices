@@ -343,3 +343,23 @@ docker-machine create --driver google \
 
 - Ручная установка кластера k8s: https://github.com/kelseyhightower/kubernetes-the-hard-way
 
+
+### ДЗ kubernetes-2
+#### Kubernetes. Запуск кластера и приложения. Модель безопасности.
+
+- Развернуть локальное окружение для работы с Kubernetes
+- Развернуть Kubernetes в GKE
+- Запустить reddit в Kubernetes
+
+![скриншот веб-интерфейса приложения в GKE](gcp-k8s-app.png)
+
+- Панель управления:  
+http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy
+
+- назначим роль cluster-admin service account-у dashboard-а
+```bash
+kubectl create clusterrolebinding kubernetes-dashboard \
+    --clusterrole=cluster-admin \
+    --serviceaccount=kube-system:kubernetes-dashboard
+```
+
