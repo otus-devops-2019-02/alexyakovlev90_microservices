@@ -363,3 +363,92 @@ kubectl create clusterrolebinding kubernetes-dashboard \
     --serviceaccount=kube-system:kubernetes-dashboard
 ```
 
+
+### ДЗ kubernetes-3
+#### Kubernetes. Networks, Storages
+1) Деплой проекта в k8s
+- создаем кластер
+```bash
+gcloud container clusters create reddit-cluster \
+    --machine-type n1-standard-1 \
+    --num-nodes 2 \
+    --disk-size 20 \
+    --no-enable-autoupgrade \
+    --project otus-fp
+```
+-  добавить кластер в файл ~/.kube/config
+```bash
+gcloud container clusters get-credentials reddit-cluster \
+    --zone europe-west4-b \
+    --project otus-fp
+```
+- установить контекст
+```bash
+kubectl config use-context CONTEXT_NAME
+# to list all contexts:
+kubectl config get-contexts
+```
+- развернуть проект
+```bash
+kubectl apply -f ./kubernetes/reddit/dev-namespace.yml
+kubectl apply -f ./kubernetes/reddit/ -n dev
+```
+- Откроем диапазон портов kubernetes для публикации сервисов
+
+2) Настройка доступа по HTTPS для ingress
+- Защитим наш сервис с помощью TLS
+```bash
+# get Ingress IP
+kubectl get ingress -n dev
+# Далее подготовим сертификат используя IP как CN
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=34.98.104.85" 
+# И загрузит сертификат в кластер kubernetes
+kubectl create secret tls ui-ingress --key tls.key --cert tls.crt -n dev
+# Проверить можно командой
+kubectl describe secret ui-ingress -n dev
+```
+- Теперь настроим Ingress на прием только HTTPS траффика: ui-ingress.yml
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ui
+  # Отключаем проброс HTTP
+  annotations:
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  # Подключаем наш сертификат
+  tls:
+    - secretName: ui-ingress
+  backend:
+    serviceName: ui
+    servicePort: 9292
+```
+3) Ограничение трафика с помощью NetworkPolicy
+- ограничить трафик, поступающий на mongodb отовсюду, кроме сервисов post и comment.
+  Для NetworkPolicy отдельно будет включен сетевой плагин Calico (вместо Kubenet).
+```bash
+# Найдите имя кластера
+gcloud beta container clusters list
+# Включим network-policy для GKE.
+gcloud beta container clusters update reddit-cluster --zone=europe-west4-b --update-addons=NetworkPolicy=ENABLED
+gcloud beta container clusters update reddit-cluster --zone=europe-west4-b  --enable-network-policy
+```
+
+4) Хранилище для базы
+- Создадим диск в Google Cloud
+```bash
+gcloud compute disks create --size=25GB --zone=europe-west4-b reddit-mongo-disk
+```
+- Добавим новый Volume POD-у базы
+```yaml
+volumeMounts:
+ - name: mongo-gce-pd-storage
+  mountPath: /data/db
+volumes:
+- name: mongo-gce-pd-storage
+  gcePersistentDisk:
+    pdName: reddit-mongo-disk
+    fsType: ext4
+```
+- PersistentVolume, PersistentVolumeClaim, StorageClass
