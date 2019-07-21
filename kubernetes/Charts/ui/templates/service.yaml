@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # Уникальное имя запущенного ресурса
+  name: {{ .Release.Name }}-{{ .Chart.Name }}
+  labels:
+    app: reddit
+    component: ui
+    # Помечаем, что сервис из конкретного релиза
+    release: {{ .Release.Name }}
+spec:
+  type: NodePort
+  ports:
+    - port: {{ .Values.service.externalPort }}
+      protocol: TCP
+      targetPort: {{ .Values.service.internalPort }}
+  selector:
+    app: reddit
+    component: ui
+    # Выбираем поды только из этого релиза
+    release: {{ .Release.Name }}

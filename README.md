@@ -452,3 +452,45 @@ volumes:
     fsType: ext4
 ```
 - PersistentVolume, PersistentVolumeClaim, StorageClass
+
+
+### ДЗ kubernetes-4
+#### CI/CD в Kubernetes
+1) Работа с Helm
+- установка
+```bash
+brew install kubernetes-helm
+```
+or https://github.com/kubernetes/helm/releases - распакуйте и разместите исполняемый 
+файл helm в директории исполнения (/usr/local/bin/ , /usr/bin, …)
+- Установим серверную часть Helm’а - Tiller (аддон Kubernetes, т.е. Pod, который общается с API Kubernetes)
+Для этого понадобится ему выдать ServiceAccount и назначить роли RBAC, 
+необходимые для работы (manifest tiller.yml).
+```bash
+kubectl apply -f tiller.yml
+# Теперь запустим tiller-сервер
+helm init --service-account tiller
+# Check
+kubectl get pods -n kube-system --selector app=helm
+```
+
+2) Развертывание Gitlab в Kubernetes
+```bash
+helm install --name test-ui-1 ui/
+
+helm upgrade ui-1 ui/
+
+```
+Здесь мы используем встроенные переменные
+```
+name: {{ .Release.Name }}-{{ .Chart.Name }}
+.Release - группа переменных с информацией о релизе (конкретном запуске Chart’а в k8s)
+.Chart - группа переменных с информацией о Chart’е (содержимое файла Chart.yaml)
+
+.Template - информация о текущем шаблоне ( .Name и .BasePath)
+.Capabilities - информация о Kubernetes (версия, версии API)
+.Files.Get - получить содержимое файла
+```
+
+
+3) Запуск CI/CD конвейера в Kubernetes
