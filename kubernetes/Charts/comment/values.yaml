@@ -4,10 +4,7 @@ service:
   externalPort: 9292
 
 image:
-  repository: alexyakovlev90/ui
+  repository: alexyakovlev90/comment
   tag: latest
 
-postHost:
-postPort:
-commentHost:
-commentPort:
+databaseHost:

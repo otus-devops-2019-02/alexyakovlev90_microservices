@@ -476,10 +476,21 @@ kubectl get pods -n kube-system --selector app=helm
 
 2) Развертывание Gitlab в Kubernetes
 ```bash
-helm install --name test-ui-1 ui/
-
+helm install --name ui-1 ui/
 helm upgrade ui-1 ui/
+# загрузить зависимости
+helm dep update ./reddit
+# Поиск чарта
+helm search mongo
 
+# Установка приложения
+helm install reddit --name reddit-test
+
+# Обновите релиз, установленный в k8s
+helm upgrade reddit-test ./reddit
+
+# remove all releases
+helm ls --all --short | xargs -L1 helm delete --purge
 ```
 Здесь мы используем встроенные переменные
 ```
