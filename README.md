@@ -371,8 +371,8 @@ kubectl create clusterrolebinding kubernetes-dashboard \
 ```bash
 gcloud container clusters create reddit-cluster \
     --machine-type n1-standard-1 \
-    --num-nodes 2 \
-    --disk-size 20 \
+    --num-nodes 3 \
+    --disk-size 100 \
     --no-enable-autoupgrade \
     --project otus-fp
 ```
@@ -503,5 +503,61 @@ name: {{ .Release.Name }}-{{ .Chart.Name }}
 .Files.Get - получить содержимое файла
 ```
 
+3) Запуск CI/CD конвейера в Kubernetes. Подготовка
+- Подготовим GKE-кластер. Нам нужны машинки помощнее.
+```bash
+gcloud container node-pools create bigpool \
+      --cluster reddit-cluster \
+      --machine-type n1-standard-2 \
+      --num-nodes 1 \
+      --disk-size 40 \
+      --no-enable-autoupgrade \
+      --project otus-fp
+gcloud container node-pools list --cluster reddit-cluster
+gcloud container node-pools describe [POOL_NAME] \
+    --cluster reddit-cluster
+```
++ вкл. устаревшие права доступа
 
-3) Запуск CI/CD конвейера в Kubernetes
+- Добавим репозиторий Gitlab
+```bash
+helm repo add gitlab https://charts.gitlab.io
+```
+- Мы будем менять конфигурацию Gitlab, поэтому скачаем Chart
+```bash
+helm fetch gitlab/gitlab-omnibus --version 0.1.37 --untar
+cd gitlab-omnibus
+```
+
+4) Установим GitLab
+- Поправьте `gitlab-omnibus/values.yaml`
+```yaml
+baseDomain: example.com
+legoEmail: you@example.com
+```
+- Добавьте в `gitlab-omnibus/templates/gitlab/gitlab-svc.yaml`
+```yaml
+- name: web
+  port: 80
+  targetPort: workhorse
+```
+- Поправить в `gitlab-omnibus/templates/gitlab-config.yaml`
+```yaml
+data:
+  external_scheme: http
+  external_hostname: {{ template "fullname" . }}
+```
+- Поправить в `gitlab-omnibus/templates/ingress/gitlab-ingress.yaml`
+...
+```bash
+helm install --name gitlab . -f values.yaml
+# Найдите выданный IP-адрес ingress-контроллера nginx.
+kubectl get service -n nginx-ingress nginx
+
+# Поместите запись в локальный файл /etc/hosts (поставьте свой IP-адрес)
+echo "34.90.114.198 gitlab-gitlab staging production" >> /etc/hosts
+
+```
+
+
+
