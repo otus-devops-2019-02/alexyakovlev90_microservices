@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  # Имя PersistentVolume'а
+  name: reddit-mongo-disk
+spec:
+  capacity:
+    storage: 25Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  gcePersistentDisk:
+    fsType: "ext4"
+    # Имя диска в GCE
+    pdName: "reddit-mongo-disk"
