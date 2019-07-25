@@ -371,9 +371,10 @@ kubectl create clusterrolebinding kubernetes-dashboard \
 ```bash
 gcloud container clusters create reddit-cluster \
     --machine-type n1-standard-1 \
-    --num-nodes 3 \
-    --disk-size 100 \
+    --num-nodes 2 \
+    --disk-size 40 \
     --no-enable-autoupgrade \
+    --enable-legacy-authorization \
     --project otus-fp
 ```
 -  добавить кластер в файл ~/.kube/config
@@ -474,7 +475,7 @@ helm init --service-account tiller
 kubectl get pods -n kube-system --selector app=helm
 ```
 
-2) Развертывание Gitlab в Kubernetes
+2) Развертывание приложения с помощью Helm
 ```bash
 helm install --name ui-1 ui/
 helm upgrade ui-1 ui/
@@ -555,9 +556,24 @@ helm install --name gitlab . -f values.yaml
 kubectl get service -n nginx-ingress nginx
 
 # Поместите запись в локальный файл /etc/hosts (поставьте свой IP-адрес)
-echo "34.90.114.198 gitlab-gitlab staging production" >> /etc/hosts
+echo '34.90.114.198 gitlab-gitlab staging production' >> /etc/hosts
 
 ```
+- Создаем проекты в локальгом GitLab и добавляем в репо сервисы
+```bash
+git init \
+    && git remote add origin http://gitlab-gitlab/alexyakovlev90/reddit-deploy.git \
+    && git add . \
+    && git commit -m "Initial commit" \
+    && git push -u origin master
+```
+- Создаем pipeline конфигурации для каждого модуля .gitlab-ci.yml
 
+- Разделение конфигурации описываем в модуле reddit-deploy
+
+- Удаление кластера
+```bash
+gcloud container clusters delete reddit-cluster
+```
 
 

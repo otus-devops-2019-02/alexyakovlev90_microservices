@@ -7,6 +7,9 @@ image:
   repository: alexyakovlev90/ui
   tag: latest
 
+ingress:
+  class: nginx
+
 postHost:
 postPort:
 commentHost:
