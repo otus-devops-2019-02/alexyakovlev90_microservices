@@ -372,8 +372,9 @@ kubectl create clusterrolebinding kubernetes-dashboard \
 gcloud container clusters create reddit-cluster \
     --machine-type n1-standard-1 \
     --num-nodes 2 \
-    --disk-size 20 \
+    --disk-size 40 \
     --no-enable-autoupgrade \
+    --enable-legacy-authorization \
     --project otus-fp
 ```
 -  добавить кластер в файл ~/.kube/config
@@ -452,3 +453,127 @@ volumes:
     fsType: ext4
 ```
 - PersistentVolume, PersistentVolumeClaim, StorageClass
+
+
+### ДЗ kubernetes-4
+#### CI/CD в Kubernetes
+1) Работа с Helm
+- установка
+```bash
+brew install kubernetes-helm
+```
+or https://github.com/kubernetes/helm/releases - распакуйте и разместите исполняемый 
+файл helm в директории исполнения (/usr/local/bin/ , /usr/bin, …)
+- Установим серверную часть Helm’а - Tiller (аддон Kubernetes, т.е. Pod, который общается с API Kubernetes)
+Для этого понадобится ему выдать ServiceAccount и назначить роли RBAC, 
+необходимые для работы (manifest tiller.yml).
+```bash
+kubectl apply -f tiller.yml
+# Теперь запустим tiller-сервер
+helm init --service-account tiller
+# Check
+kubectl get pods -n kube-system --selector app=helm
+```
+
+2) Развертывание приложения с помощью Helm
+```bash
+helm install --name ui-1 ui/
+helm upgrade ui-1 ui/
+# загрузить зависимости
+helm dep update ./reddit
+# Поиск чарта
+helm search mongo
+
+# Установка приложения
+helm install reddit --name reddit-test
+
+# Обновите релиз, установленный в k8s
+helm upgrade reddit-test ./reddit
+
+# remove all releases
+helm ls --all --short | xargs -L1 helm delete --purge
+```
+Здесь мы используем встроенные переменные
+```
+name: {{ .Release.Name }}-{{ .Chart.Name }}
+.Release - группа переменных с информацией о релизе (конкретном запуске Chart’а в k8s)
+.Chart - группа переменных с информацией о Chart’е (содержимое файла Chart.yaml)
+
+.Template - информация о текущем шаблоне ( .Name и .BasePath)
+.Capabilities - информация о Kubernetes (версия, версии API)
+.Files.Get - получить содержимое файла
+```
+
+3) Запуск CI/CD конвейера в Kubernetes. Подготовка
+- Подготовим GKE-кластер. Нам нужны машинки помощнее.
+```bash
+gcloud container node-pools create bigpool \
+      --cluster reddit-cluster \
+      --machine-type n1-standard-2 \
+      --num-nodes 1 \
+      --disk-size 40 \
+      --no-enable-autoupgrade \
+      --project otus-fp
+gcloud container node-pools list --cluster reddit-cluster
+gcloud container node-pools describe [POOL_NAME] \
+    --cluster reddit-cluster
+```
++ вкл. устаревшие права доступа
+
+- Добавим репозиторий Gitlab
+```bash
+helm repo add gitlab https://charts.gitlab.io
+```
+- Мы будем менять конфигурацию Gitlab, поэтому скачаем Chart
+```bash
+helm fetch gitlab/gitlab-omnibus --version 0.1.37 --untar
+cd gitlab-omnibus
+```
+
+4) Установим GitLab
+- Поправьте `gitlab-omnibus/values.yaml`
+```yaml
+baseDomain: example.com
+legoEmail: you@example.com
+```
+- Добавьте в `gitlab-omnibus/templates/gitlab/gitlab-svc.yaml`
+```yaml
+- name: web
+  port: 80
+  targetPort: workhorse
+```
+- Поправить в `gitlab-omnibus/templates/gitlab-config.yaml`
+```yaml
+data:
+  external_scheme: http
+  external_hostname: {{ template "fullname" . }}
+```
+- Поправить в `gitlab-omnibus/templates/ingress/gitlab-ingress.yaml`
+...
+```bash
+helm install --name gitlab . -f values.yaml
+# Найдите выданный IP-адрес ingress-контроллера nginx.
+kubectl get service -n nginx-ingress nginx
+
+# Поместите запись в локальный файл /etc/hosts (поставьте свой IP-адрес)
+echo '34.90.114.198 gitlab-gitlab staging production' >> /etc/hosts
+
+```
+- Создаем проекты в локальгом GitLab и добавляем в репо сервисы
+```bash
+git init \
+    && git remote add origin http://gitlab-gitlab/alexyakovlev90/reddit-deploy.git \
+    && git add . \
+    && git commit -m "Initial commit" \
+    && git push -u origin master
+```
+- Создаем pipeline конфигурации для каждого модуля .gitlab-ci.yml
+
+- Разделение конфигурации описываем в модуле reddit-deploy
+
+- Удаление кластера
+```bash
+gcloud container clusters delete reddit-cluster
+```
+
+
