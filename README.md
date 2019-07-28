@@ -577,3 +577,118 @@ gcloud container clusters delete reddit-cluster
 ```
 
 
+### ДЗ kubernetes-5
+#### Kubernetes. Мониторинг и логирование
+- развернуть кластер
+```bash
+gcloud container clusters create reddit-cluster \
+    --machine-type n1-standard-1 \
+    --num-nodes 2 \
+    --disk-size 40 \
+    --no-enable-stackdriver-kubernetes \
+    --no-enable-autoupgrade \
+    --enable-legacy-authorization \
+    --project otus-fp
+
+gcloud container node-pools create bigpool \
+      --cluster reddit-cluster \
+      --machine-type n1-standard-2 \
+      --num-nodes 1 \
+      --disk-size 40 \
+      --no-enable-autoupgrade \
+      --project otus-fp
+gcloud container node-pools list --cluster reddit-cluster
+```
+- Установим серверную часть Helm’а - Tiller
+```bash
+kubectl apply -f tiller.yml
+# Теперь запустим tiller-сервер
+helm init --service-account tiller
+# Check
+kubectl get pods -n kube-system --selector app=helm
+```
+- Из Helm-чарта установим ingress-контроллер nginx 
+```bash
+helm install stable/nginx-ingress --name nginx
+kubectl get svc
+```
+- Добавьте EXTERNAL-IP nginx-nginx-ingress-controller в /etc/hosts
+```bash
+34.90.60.108 reddit reddit-prometheus reddit-grafana reddit-non-prod production reddit-kibana staging prod
+sudo bash -c 'echo "34.90.60.108 reddit reddit-prometheus reddit-grafana reddit-non-prod production reddit-kibana staging prod" >> /etc/hosts'
+```
+
+1) Развертывание Prometheus в k8s
+- Загрузим prometheus локально в Charts каталог
+```bash
+cd kubernetes/charts && helm fetch --untar stable/prometheus
+# Запуск Prometheus из charsts/prometheus 
+helm upgrade prom . -f custom_values.yml --install
+```
+- Вкл nodeExporter и kubeStateMetrics в custom_values.yml. 
+- Запустите приложение из helm чарта reddit 
+```bash
+helm upgrade reddit-test ./reddit --install
+helm upgrade production --namespace production ./reddit --install
+helm upgrade staging --namespace staging ./reddit --install
+```
+- Метрики приложений. Используем механизм ServiceDiscovery
+для обнаружения приложений, запущенных в k8s.
+```yaml
+  - job_name: 'ui-endpoints'
+    kubernetes_sd_configs:
+      - role: endpoints
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_label_component]
+        action: keep
+        regex: post
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: kubernetes_name
+```
+
+2) Настройка Prometheus и Grafana для сбора метрик
+- Поставим также grafana с помощью helm
+```bash
+helm upgrade --install grafana stable/grafana --set "adminPassword=admin" \
+    --set "service.type=NodePort" \
+    --set "ingress.enabled=true" \
+    --set "ingress.hosts={reddit-grafana}"
+```
+- Мониторинг k8s
+https://grafana.com/grafana/dashboards/315
+
+- На этом графике одновременно используются метрики и шаблоны из cAdvisor, 
+и из kube-state-metrics для отображения сводной информации по деплойментам
+https://grafana.com/dashboards/741
+
+3) Настройка EFK для сбора логов
+- Добавьте label самой мощной ноде в кластере
+```bash
+kubectl get nodes
+kubectl label node gke-reddit-cluster-bigpool-971e30ce-dfw9 elastichost=true
+```
+- Логирование в k8s будем выстраивать с помощью уже известного стека EFK:
+  • ElasticSearch - база данных + поисковый движок
+  • Fluentd - шипер (отправитель) и агрегатор логов
+  • Kibana - веб-интерфейс для запросов в хранилище и отображения их результатов
+
+- запускаем efk стэк в kubernetes/
+```bash
+kubectl apply -f ./efk
+```
+- Kibana поставим из helm чарта
+```bash
+helm upgrade --install kibana stable/kibana \
+    --set "ingress.enabled=true" \
+    --set "ingress.hosts={reddit-kibana}" \
+    --set "env.ELASTICSEARCH_URL=http://elasticsearch-logging:9200" \
+    --version 0.1.1
+```
+- Поиск логов по лейблам
+```
+kubernetes.labels.component:post OR kubernetes.labels.component:comment OR kubernetes.labels.component:ui 
+```
